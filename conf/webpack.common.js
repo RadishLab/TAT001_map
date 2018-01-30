@@ -6,7 +6,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const ExtractTextPlugin = require("extract-text-webpack-plugin");
 
 const extractSass = new ExtractTextPlugin({
-    filename: "[name].[contenthash].css"
+    filename: "[name].css"
 });
 
 module.exports = {
@@ -16,12 +16,12 @@ module.exports = {
   devtool: 'source-map', // enhance debugging by adding meta info for the browser devtools
 
   entry: {
-    app: './index.js'
+    'ta-countriesmap': './index.js'
   },
 
   output: {
     path: path.join(process.cwd(), 'dist'),
-    filename: '[name].[hash].js',
+    filename: '[name].js',
     publicPath: '/',
     sourceMapFilename: '[name].map'
   },
@@ -67,9 +67,6 @@ module.exports = {
   },
   plugins: [
     new CleanWebpackPlugin(['dist'], {root: process.cwd()}),
-    new webpack.optimize.CommonsChunkPlugin({
-      name: "vendor"
-    }),
     new CopyWebpackPlugin([
       { from: 'public/' }
     ]),

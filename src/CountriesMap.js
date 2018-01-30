@@ -2,6 +2,7 @@ import { geoPath } from 'd3-geo';
 import { geoGinzburg5 } from 'd3-geo-projection';
 import { json as d3json } from 'd3-request';
 import { select } from 'd3-selection';
+import tip from 'd3-tip';
 import * as topojson from 'topojson-client';
 
 export default class CountriesMap {
@@ -9,18 +10,12 @@ export default class CountriesMap {
     this.width = options.width;
     this.height = options.height;
     this.parent = select(parent);
+    this.parentContainer = select(this.parent.node().parentNode);
 
     if (options.aspect) {
       this.parent
         .attr('preserveAspectRatio', 'xMinYMin meet')
         .attr('viewBox', `0 0 ${this.width} ${this.height}`);
-
-      const parentContainer = select(this.parent.node().parentNode);
-      parentContainer
-        .style('padding-bottom', () => {
-          const paddingBottom = parseFloat(parentContainer.style('width'), 10) * (options.aspect[1] / options.aspect[0]) + '%';
-          return paddingBottom;
-        });
     }
     else {
       this.parent
@@ -41,6 +36,9 @@ export default class CountriesMap {
     this.root = this.parent.append('g');
 
     this.loadData();
+
+    this.tip = tip().attr('class', 'ta-countriesmap-tooltip');
+    this.parent.call(this.tip);
   }
 
   loadCountries() {
@@ -61,18 +59,31 @@ export default class CountriesMap {
 
   renderPaths() {
     const smallCountryThreshold = 20000;
+    const defaultColor = '#F5F3F2';
+    const hoverColor = '#00A792';
 
     this.countries = this.root.append('g');
     const country = this.countries.selectAll('.country')
       .data(this.countriesGeojson.features)
       .enter()
       .append('g')
-      .classed('country', true);
+      .classed('country', true)
+      .on('mouseover', (d, i, nodes) => {
+        const overPath = select(nodes[i]).select('path');
 
-    const fill = (d => {
-      console.log(d);
-      return 'gray';
-    });
+        overPath
+          .style('fill', hoverColor);
+
+        this.tip.html(d.properties.NAME);
+        this.tip.show();
+      })
+      .on('mouseout', (d, i, nodes) => {
+        select(nodes[i]).select('path')
+          .style('fill', defaultColor);
+        this.tip.hide();
+      });
+
+    const fill = (() => defaultColor);
 
     let largeCountries = country.filter(d => d.properties.areakm >= smallCountryThreshold);
     if (largeCountries.empty()) {
