@@ -1,8 +1,9 @@
 import { geoPath } from 'd3-geo';
 import { geoGinzburg5 } from 'd3-geo-projection';
 import { json as d3json } from 'd3-request';
-import { select } from 'd3-selection';
+import { event as currentEvent, select } from 'd3-selection';
 import tip from 'd3-tip';
+import { zoom } from 'd3-zoom';
 import * as topojson from 'topojson-client';
 
 export default class CountriesMap {
@@ -39,6 +40,17 @@ export default class CountriesMap {
 
     this.tip = tip().attr('class', 'ta-countriesmap-tooltip');
     this.parent.call(this.tip);
+
+    this.parent.call(
+      zoom()
+        .scaleExtent([1 / 2, 4])
+        .on('zoom', this.handleZoom.bind(this))
+    );
+  }
+
+  handleZoom() {
+    const transform = currentEvent.transform;
+    this.root.attr('transform', `translate(${transform.x}, ${transform.y}) scale(${transform.k})`);
   }
 
   loadCountries() {
