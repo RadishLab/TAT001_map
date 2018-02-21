@@ -105,11 +105,21 @@ export default class CountriesMap {
 
         this.tip.html(d.properties.NAME);
         this.tip.show();
+
+        const mouseoverEvent = new CustomEvent('map:countryHover', { detail: { isocode: d.properties.ISO_A2 } });
+        this.parentContainer.node().dispatchEvent(mouseoverEvent);
       })
       .on('mouseout', (d, i, nodes) => {
         select(nodes[i]).select('path')
           .style('fill', this.defaultColor);
         this.tip.hide();
+
+        const mouseoverEvent = new CustomEvent('map:countryHover', { detail: { isocode: null } });
+        this.parentContainer.node().dispatchEvent(mouseoverEvent);
+      })
+      .on('click', d => {
+        const clickEvent = new CustomEvent('map:countryClick', { detail: { isocode: d.properties.ISO_A2 } });
+        this.parentContainer.node().dispatchEvent(clickEvent);
       });
 
     const fill = (() => this.defaultColor);
