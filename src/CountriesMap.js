@@ -24,6 +24,13 @@ export default class CountriesMap {
         .attr('width', this.width);
     }
 
+    this.defaultColor = '#F5F3F2';
+    this.hoverColor = '#00A792';
+
+    this.parentContainer.node().addEventListener('search:countrySelect', e => {
+      this.selectCountry(e.detail.isocode);
+    });
+
     this.baseDataUrl = options.baseDataUrl || '/';
     if (this.baseDataUrl.charAt(this.baseDataUrl.length - 1) !== '/') {
       this.baseDataUrl += '/';
@@ -69,10 +76,20 @@ export default class CountriesMap {
       });
   }
 
+  selectCountry(isocode) {
+    this.countries.selectAll('.country path')
+      .style('fill', this.defaultColor);
+
+    this.countries.selectAll('.country path')
+      .filter(d => {
+        if (d.properties.ISO_A2 && isocode === d.properties.ISO_A2) return true;
+        return isocode === d.properties.ISO_A3;
+      })
+      .style('fill', this.hoverColor);
+  }
+
   renderPaths() {
     const smallCountryThreshold = 20000;
-    const defaultColor = '#F5F3F2';
-    const hoverColor = '#00A792';
 
     this.countries = this.root.append('g');
     const country = this.countries.selectAll('.country')
@@ -84,18 +101,18 @@ export default class CountriesMap {
         const overPath = select(nodes[i]).select('path');
 
         overPath
-          .style('fill', hoverColor);
+          .style('fill', this.hoverColor);
 
         this.tip.html(d.properties.NAME);
         this.tip.show();
       })
       .on('mouseout', (d, i, nodes) => {
         select(nodes[i]).select('path')
-          .style('fill', defaultColor);
+          .style('fill', this.defaultColor);
         this.tip.hide();
       });
 
-    const fill = (() => defaultColor);
+    const fill = (() => this.defaultColor);
 
     let largeCountries = country.filter(d => d.properties.areakm >= smallCountryThreshold);
     if (largeCountries.empty()) {
