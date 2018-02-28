@@ -12,6 +12,7 @@ export default class CountriesMap {
     this.height = options.height;
     this.parent = select(parent);
     this.parentContainer = select(this.parent.node().parentNode);
+    this.allowInteractivity = !options.disableInteractivity;
 
     if (options.aspect) {
       this.parent
@@ -39,8 +40,6 @@ export default class CountriesMap {
     if (this.baseDataUrl.charAt(this.baseDataUrl.length - 1) !== '/') {
       this.baseDataUrl += '/';
     }
-
-    console.log(options.allowScrollZoom);
 
     this.dataOverrideUrl = options.dataOverrideUrl;
 
@@ -111,31 +110,35 @@ export default class CountriesMap {
       .data(this.countriesGeojson.features)
       .enter()
       .append('g')
-      .classed('country', true)
-      .on('mouseover', (d, i, nodes) => {
-        const overPath = select(nodes[i]).select('path');
+      .classed('country', true);
 
-        overPath
-          .style('fill', this.hoverColor);
+    if (this.allowInteractivity) {
+      country
+        .on('mouseover', (d, i, nodes) => {
+          const overPath = select(nodes[i]).select('path');
 
-        this.tip.html(d.properties.NAME);
-        this.tip.show();
+          overPath
+            .style('fill', this.hoverColor);
 
-        const mouseoverEvent = new CustomEvent('map:countryHover', { detail: { isocode: d.properties.ISO_A2 } });
-        this.parentContainer.node().dispatchEvent(mouseoverEvent);
-      })
-      .on('mouseout', (d, i, nodes) => {
-        select(nodes[i]).select('path')
-          .style('fill', this.defaultColor);
-        this.tip.hide();
+          this.tip.html(d.properties.NAME);
+          this.tip.show();
 
-        const mouseoverEvent = new CustomEvent('map:countryHover', { detail: { isocode: null } });
-        this.parentContainer.node().dispatchEvent(mouseoverEvent);
-      })
-      .on('click', d => {
-        const clickEvent = new CustomEvent('map:countryClick', { detail: { isocode: d.properties.ISO_A2 } });
-        this.parentContainer.node().dispatchEvent(clickEvent);
-      });
+          const mouseoverEvent = new CustomEvent('map:countryHover', { detail: { isocode: d.properties.ISO_A2 } });
+          this.parentContainer.node().dispatchEvent(mouseoverEvent);
+        })
+        .on('mouseout', (d, i, nodes) => {
+          select(nodes[i]).select('path')
+            .style('fill', this.defaultColor);
+          this.tip.hide();
+
+          const mouseoverEvent = new CustomEvent('map:countryHover', { detail: { isocode: null } });
+          this.parentContainer.node().dispatchEvent(mouseoverEvent);
+        })
+        .on('click', d => {
+          const clickEvent = new CustomEvent('map:countryClick', { detail: { isocode: d.properties.ISO_A2 } });
+          this.parentContainer.node().dispatchEvent(clickEvent);
+        });
+    }
 
     const fill = (() => this.defaultColor);
 
