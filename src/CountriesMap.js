@@ -150,10 +150,10 @@ export default class CountriesMap {
       .style('fill', fill)
       .attr('d', d => this.path(d));
 
-    const smallCountries = country.filter(d => d.properties.areakm < smallCountryThreshold);
+    const smallCountries = country.filter(d => d.properties.areakm < smallCountryThreshold && d.properties.TA6_COUNTRY);
     smallCountries.append('circle')
       .style('fill', fill)
-      .attr('r', 1)
+      .attr('r', 7)
       .attr('cx', d => this.path.centroid(d)[0])
       .attr('cy', d => this.path.centroid(d)[1]);
 
