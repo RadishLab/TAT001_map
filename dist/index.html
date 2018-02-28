@@ -5,6 +5,17 @@
     <title>Map Search</title>
   <link href="/ta-countriesmap.css" rel="stylesheet"></head>
   <body>
-    <div id="ta-countries-map" data-aspect="[16, 9]" data-base-data-url="./data/"></div>
+    <div id="ta-countries-map" data-aspect="[16, 9]" data-disable-scroll-zoom="true" data-disable-interactivity="true" data-base-data-url="./data/"></div>
+    <script>
+      function testSelect(isocode) {
+        var e = new CustomEvent('search:countrySelect', { detail: { isocode: isocode }});
+        document.getElementById('ta-countries-map').dispatchEvent(e);
+      }
+
+      function testSelectAndZoom(isocode) {
+        var e = new CustomEvent('search:countrySelect', { detail: { isocode: isocode, zoomTo: true }});
+        document.getElementById('ta-countries-map').dispatchEvent(e);
+      }
+    </script>
   <script type="text/javascript" src="/ta-countriesmap.js"></script></body>
 </html>
