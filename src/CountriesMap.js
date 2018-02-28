@@ -40,6 +40,8 @@ export default class CountriesMap {
       this.baseDataUrl += '/';
     }
 
+    console.log(options.allowScrollZoom);
+
     this.dataOverrideUrl = options.dataOverrideUrl;
 
     this.projection = geoGinzburg5();
@@ -52,11 +54,13 @@ export default class CountriesMap {
     this.tip = tip().attr('class', 'ta-countriesmap-tooltip');
     this.parent.call(this.tip);
 
-    this.parent.call(
-      zoom()
-        .scaleExtent([1 / 2, 4])
-        .on('zoom', this.handleZoom.bind(this))
-    );
+    if (!options.disableScrollZoom) {
+      this.parent.call(
+        zoom()
+          .scaleExtent([1 / 2, 4])
+          .on('zoom', this.handleZoom.bind(this))
+      );
+    }
   }
 
   getMatchingCountry(isocode) {
