@@ -28,7 +28,11 @@ export default class CountriesMap {
     this.hoverColor = '#00A792';
 
     this.parentContainer.node().addEventListener('search:countrySelect', e => {
-      this.selectCountry(e.detail.isocode);
+      const match = this.getMatchingCountry(e.detail.isocode);
+      this.selectCountry(match);
+      if (e.detail.zoomTo && !match.empty()) {
+        this.zoomToFeature(match.data()[0]);
+      }
     });
 
     this.baseDataUrl = options.baseDataUrl || '/';
@@ -55,6 +59,15 @@ export default class CountriesMap {
     );
   }
 
+  getMatchingCountry(isocode) {
+    const match = this.countries.selectAll('.country path')
+      .filter(d => {
+        if (d.properties.ISO_A2 && isocode === d.properties.ISO_A2) return true;
+        return isocode === d.properties.ISO_A3;
+      });
+    return match;
+  }
+
   handleZoom() {
     const transform = currentEvent.transform;
     this.root.attr('transform', `translate(${transform.x}, ${transform.y}) scale(${transform.k})`);
@@ -76,22 +89,20 @@ export default class CountriesMap {
       });
   }
 
-  selectCountry(isocode) {
+  selectCountry(matchingCountry) {
     this.countries.selectAll('.country path')
       .style('fill', this.defaultColor);
 
-    this.countries.selectAll('.country path')
-      .filter(d => {
-        if (d.properties.ISO_A2 && isocode === d.properties.ISO_A2) return true;
-        return isocode === d.properties.ISO_A3;
-      })
+    matchingCountry
       .style('fill', this.hoverColor);
   }
 
   renderPaths() {
     const smallCountryThreshold = 20000;
 
-    this.countries = this.root.append('g');
+    if (!this.countries) {
+      this.countries = this.root.append('g').classed('countries', true);
+    }
     const country = this.countries.selectAll('.country')
       .data(this.countriesGeojson.features)
       .enter()
@@ -140,6 +151,21 @@ export default class CountriesMap {
       .attr('cy', d => this.path.centroid(d)[1]);
 
     return country;
+  }
+
+  zoomToFeature(feature) {
+    var bounds = this.path.bounds(feature),
+      dx = bounds[1][0] - bounds[0][0],
+      dy = bounds[1][1] - bounds[0][1],
+      x = (bounds[0][0] + bounds[1][0]) / 2,
+      y = (bounds[0][1] + bounds[1][1]) / 2,
+      scale = .9 / Math.max(dx / this.width, dy / this.height),
+      translate = [this.width / 2 - scale * x, this.height / 2 - scale * y];
+
+    this.countries.transition()
+      .duration(750)
+      .style('stroke-width', 1.5 / scale + 'px')
+      .attr('transform', `translate(${translate})scale(${scale})`);
   }
 
   render() {
