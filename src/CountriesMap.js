@@ -187,21 +187,22 @@ export default class CountriesMap {
   }
 
   render() {
+    const parentRect = this.parent.node().getBoundingClientRect();
     let zoomFeatures = this.countriesGeojson;
+    let extent = [[0, 0], [parentRect.width, parentRect.height]];
+
     if (this.initialCountry) {
       const match = this.countriesGeojson.features.filter(d => {
         if (d.properties.ISO_A2 && this.initialCountry === d.properties.ISO_A2) return true;
         return this.initialCountry === d.properties.ISO_A3;
       })[0];
-      zoomFeatures = match;
+      if (match) {
+        zoomFeatures = match;
+        extent = [[0, 0], [parentRect.width / 2, parentRect.height]];
+      }
     }
 
-    const parentRect = this.parent.node().getBoundingClientRect();
-    this.projection.fitExtent([
-      [0, 0],
-      [parentRect.width, parentRect.height]
-    ], zoomFeatures);
-
+    this.projection.fitExtent(extent, zoomFeatures);
     this.renderPaths();
   }
 }
