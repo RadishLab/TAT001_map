@@ -1,3 +1,4 @@
+import { max }  from 'd3-array';
 import { geoPath } from 'd3-geo';
 import { geoGinzburg5 } from 'd3-geo-projection';
 import { json as d3json } from 'd3-request';
@@ -5,6 +6,9 @@ import { event as currentEvent, select } from 'd3-selection';
 import tip from 'd3-tip';
 import { zoom } from 'd3-zoom';
 import * as topojson from 'topojson-client';
+import area from '@turf/area';
+import { featureCollection } from '@turf/helpers';
+import { flattenEach } from '@turf/meta';
 
 export default class CountriesMap {
   constructor(parent, options) {
@@ -197,7 +201,16 @@ export default class CountriesMap {
         return this.initialCountry === d.properties.ISO_A3;
       })[0];
       if (match) {
-        zoomFeatures = match;
+        const matchParts = [];
+        flattenEach(match, f => {
+          f.properties = { area: area(f) };
+          matchParts.push(f);
+        });
+
+        const maxArea = max(matchParts, d => d.properties.area);
+        const bigParts = matchParts.filter(part => part.properties.area >= maxArea / 10);
+
+        zoomFeatures = featureCollection(bigParts);
         extent = [[0, 0], [parentRect.width / 2, parentRect.height]];
       }
     }
