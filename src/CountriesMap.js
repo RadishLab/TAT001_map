@@ -13,6 +13,7 @@ export default class CountriesMap {
     this.parent = select(parent);
     this.parentContainer = select(this.parent.node().parentNode);
     this.allowInteractivity = !options.disableInteractivity;
+    this.initialCountry = options.iso;
 
     if (options.aspect) {
       this.parent
@@ -140,7 +141,17 @@ export default class CountriesMap {
         });
     }
 
-    const fill = (() => this.defaultColor);
+    const fill = ((d) => {
+      if (this.initialCountry) {
+        if (
+          (d.properties.ISO_A2 && this.initialCountry === d.properties.ISO_A2) ||
+          this.initialCountry === d.properties.ISO_A3
+        ) {
+          return this.hoverColor;
+        }
+      }
+      return this.defaultColor;
+    });
 
     let largeCountries = country.filter(d => d.properties.areakm >= smallCountryThreshold);
     if (largeCountries.empty()) {
@@ -176,11 +187,20 @@ export default class CountriesMap {
   }
 
   render() {
+    let zoomFeatures = this.countriesGeojson;
+    if (this.initialCountry) {
+      const match = this.countriesGeojson.features.filter(d => {
+        if (d.properties.ISO_A2 && this.initialCountry === d.properties.ISO_A2) return true;
+        return this.initialCountry === d.properties.ISO_A3;
+      })[0];
+      zoomFeatures = match;
+    }
+
     const parentRect = this.parent.node().getBoundingClientRect();
     this.projection.fitExtent([
       [0, 0],
       [parentRect.width, parentRect.height]
-    ], this.countriesGeojson);
+    ], zoomFeatures);
 
     this.renderPaths();
   }
