@@ -166,7 +166,7 @@ export default class CountriesMap {
       dy = bounds[1][1] - bounds[0][1],
       x = (bounds[0][0] + bounds[1][0]) / 2,
       y = (bounds[0][1] + bounds[1][1]) / 2,
-      scale = .9 / Math.max(dx / this.width, dy / this.height),
+      scale = Math.min(20, .9 / Math.max(dx / this.width, dy / this.height)),
       translate = [this.width / 2 - scale * x, this.height / 2 - scale * y];
 
     this.countries.transition()
