@@ -157,16 +157,12 @@ export default class CountriesMap {
       return this.defaultColor;
     });
 
-    let largeCountries = country.filter(d => d.properties.areakm >= smallCountryThreshold);
-    if (largeCountries.empty()) {
-      largeCountries = country;
-    }
-    largeCountries.append('path')
+    country.append('path')
       .style('fill', fill)
       .attr('d', d => this.path(d));
 
-    const smallCountries = country.filter(d => d.properties.areakm < smallCountryThreshold && d.properties.TA6_COUNTRY);
-    smallCountries.append('circle')
+    this.smallCountries = country.filter(d => d.properties.areakm < smallCountryThreshold && d.properties.TA6_COUNTRY);
+    this.smallCountries.append('circle')
       .style('fill', fill)
       .attr('r', 7)
       .attr('cx', d => this.path.centroid(d)[0])
@@ -175,14 +171,23 @@ export default class CountriesMap {
     return country;
   }
 
+  hideSmallCountryCircles() {
+    this.smallCountries.select('circle')
+      .style('display', 'none');
+  }
+
   zoomToFeature(feature) {
     var bounds = this.path.bounds(feature),
       dx = bounds[1][0] - bounds[0][0],
       dy = bounds[1][1] - bounds[0][1],
       x = (bounds[0][0] + bounds[1][0]) / 2,
       y = (bounds[0][1] + bounds[1][1]) / 2,
-      scale = Math.min(20, .9 / Math.max(dx / this.width, dy / this.height)),
+      scale = Math.min(1.5, .9 / Math.max(dx / this.width, dy / this.height)),
       translate = [this.width / 2 - scale * x, this.height / 2 - scale * y];
+
+    if (scale > 1) {
+      this.hideSmallCountryCircles();
+    }
 
     this.countries.transition()
       .duration(750)
@@ -194,9 +199,10 @@ export default class CountriesMap {
     const parentRect = this.parent.node().getBoundingClientRect();
     let zoomFeatures = this.countriesGeojson;
     let extent = [[0, 0], [parentRect.width, parentRect.height]];
+    let match;
 
     if (this.initialCountry) {
-      const match = this.countriesGeojson.features.filter(d => {
+      match = this.countriesGeojson.features.filter(d => {
         if (d.properties.ISO_A2 && this.initialCountry === d.properties.ISO_A2) return true;
         return this.initialCountry === d.properties.ISO_A3;
       })[0];
@@ -217,5 +223,9 @@ export default class CountriesMap {
 
     this.projection.fitExtent(extent, zoomFeatures);
     this.renderPaths();
+
+    if (match) {
+      this.hideSmallCountryCircles();
+    }
   }
 }
