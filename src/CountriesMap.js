@@ -7,6 +7,9 @@ import tip from 'd3-tip';
 import { zoom } from 'd3-zoom';
 import * as topojson from 'topojson-client';
 import area from '@turf/area';
+import buffer from '@turf/buffer';
+import bbox from '@turf/bbox';
+import bboxPolygon from '@turf/bbox-polygon';
 import { featureCollection } from '@turf/helpers';
 import { flattenEach } from '@turf/meta';
 
@@ -182,8 +185,8 @@ export default class CountriesMap {
       dy = bounds[1][1] - bounds[0][1],
       x = (bounds[0][0] + bounds[1][0]) / 2,
       y = (bounds[0][1] + bounds[1][1]) / 2,
-      scale = Math.min(1.5, .9 / Math.max(dx / this.width, dy / this.height)),
-      translate = [this.width / 2 - scale * x, this.height / 2 - scale * y];
+      scale = Math.min(0.9, .9 / Math.max(dx / this.width, dy / this.height)),
+      translate = [this.width / 4 - scale * x, this.height / 2 - scale * y];
 
     if (scale > 1) {
       this.hideSmallCountryCircles();
@@ -217,6 +220,12 @@ export default class CountriesMap {
         const bigParts = matchParts.filter(part => part.properties.area >= maxArea / 10);
 
         zoomFeatures = featureCollection(bigParts);
+        let bboxFeature = bboxPolygon(bbox(featureCollection(bigParts)));
+        const targetArea = 55000000000;
+        while (area(bboxFeature) <= targetArea) {
+          zoomFeatures = buffer(zoomFeatures, 25);
+          bboxFeature = bboxPolygon(bbox(zoomFeatures));
+        }
         extent = [[0, 0], [parentRect.width / 2, parentRect.height]];
       }
     }
