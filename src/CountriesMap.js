@@ -226,7 +226,6 @@ export default class CountriesMap {
 
     this.countries.transition()
       .duration(750)
-      .style('stroke-width', 1.5 / scale + 'px')
       .attr('transform', `translate(${translate})scale(${scale})`);
   }
 
