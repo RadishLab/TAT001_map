@@ -179,7 +179,39 @@ export default class CountriesMap {
       .style('display', 'none');
   }
 
+  /*
+   * Get the larger parts of feature--the ones we definitely want to see when
+   * we zoom.
+   */
+  getBigPartsOfFeature(feature) {
+    const parts = [];
+    flattenEach(feature, f => {
+      f.properties = { area: area(f) };
+      parts.push(f);
+    });
+
+    const maxArea = max(parts, d => d.properties.area);
+    const bigParts = parts.filter(part => part.properties.area >= maxArea / 10);
+    return featureCollection(bigParts);
+  }
+
+  /*
+   * Buffer the feature to make it larger, ensuring that it's a significant size
+   * before zooming to it. This is a little awkward but is one way to
+   * consistently zoom to the same scale across different scale methods.
+   */
+  bufferFeature(feature) {
+    let bboxFeature = bboxPolygon(bbox(feature));
+    const targetArea = 55000000000;
+    while (area(bboxFeature) <= targetArea) {
+      feature = buffer(feature, 25);
+      bboxFeature = bboxPolygon(bbox(feature));
+    }
+    return feature;
+  }
+
   zoomToFeature(feature) {
+    feature = this.bufferFeature(this.getBigPartsOfFeature(feature));
     var bounds = this.path.bounds(feature),
       dx = bounds[1][0] - bounds[0][0],
       dy = bounds[1][1] - bounds[0][1],
@@ -210,22 +242,8 @@ export default class CountriesMap {
         return this.initialCountry === d.properties.ISO_A3;
       })[0];
       if (match) {
-        const matchParts = [];
-        flattenEach(match, f => {
-          f.properties = { area: area(f) };
-          matchParts.push(f);
-        });
-
-        const maxArea = max(matchParts, d => d.properties.area);
-        const bigParts = matchParts.filter(part => part.properties.area >= maxArea / 10);
-
-        zoomFeatures = featureCollection(bigParts);
-        let bboxFeature = bboxPolygon(bbox(featureCollection(bigParts)));
-        const targetArea = 55000000000;
-        while (area(bboxFeature) <= targetArea) {
-          zoomFeatures = buffer(zoomFeatures, 25);
-          bboxFeature = bboxPolygon(bbox(zoomFeatures));
-        }
+        zoomFeatures = this.getBigPartsOfFeature(match);
+        zoomFeatures = this.bufferFeature(zoomFeatures);
         extent = [[0, 0], [parentRect.width / 2, parentRect.height]];
       }
     }
