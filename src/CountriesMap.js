@@ -125,6 +125,8 @@ export default class CountriesMap {
         .on('mouseover', (d, i, nodes) => {
           const overPath = select(nodes[i]).select('path');
 
+          this.countries.selectAll('.country path')
+            .style('fill', this.defaultColor);
           overPath
             .style('fill', this.hoverColor);
 
