@@ -49,6 +49,8 @@ export default class CountriesMap {
       this.baseDataUrl += '/';
     }
 
+    this.countriesTopojsonUrl = options.countriesTopojsonUrl;
+
     this.dataOverrideUrl = options.dataOverrideUrl;
 
     this.projection = geoGinzburg5();
@@ -85,8 +87,12 @@ export default class CountriesMap {
   }
 
   loadCountries() {
+    let countriesTopojsonUrl = this.countriesTopojsonUrl;
+    if (!countriesTopojsonUrl) {
+      countriesTopojsonUrl = this.baseDataUrl + 'countries-simplified.topojson';
+    }
     return new Promise((resolve) => {
-      d3json(this.baseDataUrl + 'countries-simplified.topojson', (data) => {
+      d3json(countriesTopojsonUrl, (data) => {
         resolve(topojson.feature(data, data.objects['-']));
       });
     });
