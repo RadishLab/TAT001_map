@@ -42,6 +42,7 @@
     "@turf/flatten": "^5.1.5",
     "@turf/helpers": "^6.0.1",
     "@turf/meta": "^6.0.1",
+    "@turf/nearest-point-on-line": "^6.0.2",
     "d3-array": "^1.2.1",
     "d3-geo": "^1.9.1",
     "d3-geo-projection": "^2.3.2",

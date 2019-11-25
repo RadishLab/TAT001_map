@@ -2,6 +2,7 @@ import { max }  from 'd3-array';
 import { geoPath } from 'd3-geo';
 import { geoGinzburg5 } from 'd3-geo-projection';
 import { json as d3json } from 'd3-request';
+import { line } from 'd3-shape';
 import { event as currentEvent, select } from 'd3-selection';
 import tip from 'd3-tip';
 import { zoom } from 'd3-zoom';
@@ -10,8 +11,9 @@ import area from '@turf/area';
 import buffer from '@turf/buffer';
 import bbox from '@turf/bbox';
 import bboxPolygon from '@turf/bbox-polygon';
-import { featureCollection } from '@turf/helpers';
+import { featureCollection, point } from '@turf/helpers';
 import { flattenEach } from '@turf/meta';
+import nearestPointOnLine from '@turf/nearest-point-on-line';
 
 export default class CountriesMap {
   constructor(parent, options) {
@@ -83,6 +85,12 @@ export default class CountriesMap {
 
   handleZoom() {
     const transform = currentEvent.transform;
+    if (transform.k < 3) {
+      this.hideDisputedLines();
+    } else {
+      this.renderDisputedLines();
+    }
+
     this.root.attr('transform', `translate(${transform.x}, ${transform.y}) scale(${transform.k})`);
   }
 
@@ -98,10 +106,18 @@ export default class CountriesMap {
     });
   }
 
+  loadDisputedLines() {
+    const url = `${this.baseDataUrl}disputed-lines.geojson`;
+    return new Promise((resolve) => {
+      d3json(url, (data) => resolve(data));
+    });
+  }
+
   loadData() {
-    return Promise.all([this.loadCountries()])
-      .then(([countries]) => {
+    return Promise.all([this.loadCountries(), this.loadDisputedLines()])
+      .then(([countries, disputedLines]) => {
         this.countriesGeojson = countries;
+        this.disputedLinesGeojson = disputedLines;
         this.render();
       });
   }
@@ -180,6 +196,83 @@ export default class CountriesMap {
       .attr('cy', d => this.path.centroid(d)[1]);
 
     return country;
+  }
+
+  hideDisputedLines() {
+    if (this.disputedLines) {
+      this.disputedLines.remove();
+      this.disputedLines = null;
+    }
+  }
+
+  renderDisputedLines() {
+    if (this.disputedLines) return;
+    this.disputedLines = this.root.append('g').classed('disputed-lines', true);
+
+    const updatedFeatures = this.disputedLinesGeojson.features.map(d => {
+      const centroid = this.path.centroid(d);
+
+      const labelPosition = [...centroid];
+      let labelRelativePosition;
+      if (d.properties.label === 'Indian Line') {
+        labelPosition[1] -= 10;
+        labelRelativePosition = 'top';
+      }
+      if (d.properties.label === 'Chinese Line') {
+        labelPosition[1] += 10;
+        labelRelativePosition = 'bottom';
+      }
+
+      return Object.assign({}, d, {
+        properties: Object.assign({}, d.properties, {
+          centroid,
+          labelPosition,
+          labelRelativePosition
+        })
+      });
+    });
+
+    const disputedLine = this.disputedLines.selectAll('.disputed-lines')
+      .data(updatedFeatures)
+      .enter()
+      .append('g')
+      .classed('disputed-line', true);
+
+    disputedLine.append('path')
+      .style('stroke', '#888')
+      .style('stroke-width', '0.25px')
+      .style('fill', 'none')
+      .attr('d', d => this.path(d));
+
+    disputedLine.append('text')
+      .text(d => d.properties.label)
+      .attr('transform', d => {
+        return `translate(${d.properties.labelPosition[0]}, ${d.properties.labelPosition[1]})`;
+      })
+      .style('font-size', '5px');
+
+    disputedLine.append('path')
+      .style('stroke', '#444')
+      .style('stroke-width', '0.25px')
+      .attr('d', (d, i) => {
+        const text = select(disputedLine.nodes()[i]).select('text').node();
+        const bbox = text.getBBox();
+        let labelSide = [...d.properties.labelPosition];
+        labelSide[0] += bbox.width / 2;
+        if (d.properties.labelRelativePosition === 'top') {
+          labelSide[1] += 2;
+        }
+        if (d.properties.labelRelativePosition === 'bottom') {
+          labelSide[1] -= bbox.height;
+        }
+
+        const nearestPointToCentroid = nearestPointOnLine(d, point(this.projection.invert(d.properties.centroid)));
+
+        return line()([
+          labelSide,
+          this.projection(nearestPointToCentroid.geometry.coordinates)
+        ]);
+      });
   }
 
   hideSmallCountryCircles() {
