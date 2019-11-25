@@ -153,7 +153,7 @@ export default class CountriesMap {
             .style('fill', this.hoverColor);
 
           this.tip.html(d.properties.NAME);
-          this.tip.show();
+          this.tip.show(d, nodes[i]);
 
           const mouseoverEvent = new CustomEvent('map:countryHover', { detail: { isocode: d.properties.ISO_A2 } });
           this.parentContainer.node().dispatchEvent(mouseoverEvent);
